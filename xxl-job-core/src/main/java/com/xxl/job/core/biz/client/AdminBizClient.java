@@ -9,7 +9,7 @@ import com.xxl.job.core.util.XxlJobRemotingUtil;
 import java.util.List;
 
 /**
- * admin api test
+ * 与调度平台通信的客户端
  *
  * @author xuxueli 2017-07-28 22:14:52
  */
@@ -17,6 +17,7 @@ public class AdminBizClient implements AdminBiz {
 
     public AdminBizClient() {
     }
+
     public AdminBizClient(String addressUrl, String accessToken) {
         this.addressUrl = addressUrl;
         this.accessToken = accessToken;
@@ -31,16 +32,34 @@ public class AdminBizClient implements AdminBiz {
     private String accessToken;
 
 
+    /**
+     * 将调度结果通过回调发送到调度平台
+     *
+     * @param callbackParamList
+     * @return
+     */
     @Override
     public ReturnT<String> callback(List<HandleCallbackParam> callbackParamList) {
-        return XxlJobRemotingUtil.postBody(addressUrl+"api/callback", accessToken, callbackParamList, 3);
+        return XxlJobRemotingUtil.postBody(addressUrl + "api/callback", accessToken, callbackParamList, 3);
     }
 
+    /**
+     * 将执行器的信息注册到调度平台
+     *
+     * @param registryParam
+     * @return
+     */
     @Override
     public ReturnT<String> registry(RegistryParam registryParam) {
         return XxlJobRemotingUtil.postBody(addressUrl + "api/registry", accessToken, registryParam, 3);
     }
 
+    /**
+     *  取消执行器注册
+     *
+     * @param registryParam
+     * @return
+     */
     @Override
     public ReturnT<String> registryRemove(RegistryParam registryParam) {
         return XxlJobRemotingUtil.postBody(addressUrl + "api/registryRemove", accessToken, registryParam, 3);
