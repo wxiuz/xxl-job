@@ -4,13 +4,33 @@ package com.xxl.job.core.glue;
  * Created by xuxueli on 17/4/26.
  */
 public enum GlueTypeEnum {
-
+    /**
+     * 运行的业务代码在执行器端开发并直接放到执行器中
+     */
     BEAN("BEAN", false, null, null),
+    /**
+     * 运行的业务代码放在调度中心的配置库中
+     */
     GLUE_GROOVY("GLUE(Java)", false, null, null),
+    /**
+     * 运行的业务代码放在调度中心的配置库中
+     */
     GLUE_SHELL("GLUE(Shell)", true, "bash", ".sh"),
+    /**
+     * 运行的业务代码放在调度中心的配置库中
+     */
     GLUE_PYTHON("GLUE(Python)", true, "python", ".py"),
+    /**
+     * 运行的业务代码放在调度中心的配置库中
+     */
     GLUE_PHP("GLUE(PHP)", true, "php", ".php"),
+    /**
+     * 运行的业务代码放在调度中心的配置库中
+     */
     GLUE_NODEJS("GLUE(Nodejs)", true, "node", ".js"),
+    /**
+     * 运行的业务代码放在调度中心的配置库中
+     */
     GLUE_POWERSHELL("GLUE(PowerShell)", true, "powershell", ".ps1");
 
     private String desc;
@@ -18,7 +38,7 @@ public enum GlueTypeEnum {
     private String cmd;
     private String suffix;
 
-    private GlueTypeEnum(String desc, boolean isScript, String cmd, String suffix) {
+    GlueTypeEnum(String desc, boolean isScript, String cmd, String suffix) {
         this.desc = desc;
         this.isScript = isScript;
         this.cmd = cmd;
@@ -41,8 +61,8 @@ public enum GlueTypeEnum {
         return suffix;
     }
 
-    public static GlueTypeEnum match(String name){
-        for (GlueTypeEnum item: GlueTypeEnum.values()) {
+    public static GlueTypeEnum match(String name) {
+        for (GlueTypeEnum item : GlueTypeEnum.values()) {
             if (item.name().equals(name)) {
                 return item;
             }

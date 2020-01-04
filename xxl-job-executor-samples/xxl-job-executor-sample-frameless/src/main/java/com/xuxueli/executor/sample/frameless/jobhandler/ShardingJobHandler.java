@@ -18,7 +18,6 @@ public class ShardingJobHandler extends IJobHandler {
 		// 分片参数
 		ShardingUtil.ShardingVO shardingVO = ShardingUtil.getShardingVo();
 		XxlJobLogger.log("分片参数：当前分片序号 = {}, 总分片数 = {}", shardingVO.getIndex(), shardingVO.getTotal());
-
 		// 业务逻辑
 		for (int i = 0; i < shardingVO.getTotal(); i++) {
 			if (i == shardingVO.getIndex()) {

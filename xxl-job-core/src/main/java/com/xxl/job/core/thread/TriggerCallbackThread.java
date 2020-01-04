@@ -71,38 +71,22 @@ public class TriggerCallbackThread {
         }
 
         // callback
-        triggerCallbackThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                // normal callback
-                while (!toStop) {
-                    try {
-                        // 从结果队列中获取一个结果，该方法会一直阻塞到有元素可以获取，主要通过该方法来完成producer-consumer模式，
-                        // 从而在没有结果的时候该线程保持阻塞
-                        HandleCallbackParam callback = getInstance().callBackQueue.take();
-                        if (callback != null) {
-
-                            // callback list
-                            List<HandleCallbackParam> callbackParamList = new ArrayList<HandleCallbackParam>();
-                            // 如果队列中有job调用结果，此时获取所有的调用结果并进行回调
-                            getInstance().callBackQueue.drainTo(callbackParamList);
-                            // 将第一个取出的数据一起加入到集合中
-                            callbackParamList.add(callback);
-                            // 回调操作
-                            doCallback(callbackParamList);
-                        }
-                    } catch (Exception e) {
-                        if (!toStop) {
-                            logger.error(e.getMessage(), e);
-                        }
-                    }
-                }
-
+        triggerCallbackThread = new Thread(() -> {
+            // normal callback
+            while (!toStop) {
                 try {
-                    // 如果停止了当前线程，则将最后一次的结果进行回调给调度中心
-                    List<HandleCallbackParam> callbackParamList = new ArrayList<HandleCallbackParam>();
-                    getInstance().callBackQueue.drainTo(callbackParamList);
-                    if (callbackParamList != null && callbackParamList.size() > 0) {
+                    // 从结果队列中获取一个结果，该方法会一直阻塞到有元素可以获取，主要通过该方法来完成producer-consumer模式，
+                    // 从而在没有结果的时候该线程保持阻塞
+                    HandleCallbackParam callback = getInstance().callBackQueue.take();
+                    if (callback != null) {
+
+                        // callback list
+                        List<HandleCallbackParam> callbackParamList = new ArrayList<HandleCallbackParam>();
+                        // 如果队列中有job调用结果，此时获取所有的调用结果并进行回调
+                        getInstance().callBackQueue.drainTo(callbackParamList);
+                        // 将第一个取出的数据一起加入到集合中
+                        callbackParamList.add(callback);
+                        // 回调操作
                         doCallback(callbackParamList);
                     }
                 } catch (Exception e) {
@@ -110,9 +94,22 @@ public class TriggerCallbackThread {
                         logger.error(e.getMessage(), e);
                     }
                 }
-                logger.info(">>>>>>>>>>> xxl-job, executor callback thread destory.");
-
             }
+
+            try {
+                // 如果停止了当前线程，则将最后一次的结果进行回调给调度中心
+                List<HandleCallbackParam> callbackParamList = new ArrayList<HandleCallbackParam>();
+                getInstance().callBackQueue.drainTo(callbackParamList);
+                if (callbackParamList != null && callbackParamList.size() > 0) {
+                    doCallback(callbackParamList);
+                }
+            } catch (Exception e) {
+                if (!toStop) {
+                    logger.error(e.getMessage(), e);
+                }
+            }
+            logger.info(">>>>>>>>>>> xxl-job, executor callback thread destory.");
+
         });
         triggerCallbackThread.setDaemon(true);
         triggerCallbackThread.setName("xxl-job, executor TriggerCallbackThread");

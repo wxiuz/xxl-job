@@ -272,16 +272,22 @@ public class XxlJobExecutor {
 
 
     // ---------------------- job thread repository ----------------------
+    /**
+     * 每个job都映射有专门的线程来处理
+     */
     private static ConcurrentMap<Integer, JobThread> jobThreadRepository = new ConcurrentHashMap<Integer, JobThread>();
 
     public static JobThread registJobThread(int jobId, IJobHandler handler, String removeOldReason) {
+        // 为Job创建一个新的线程
         JobThread newJobThread = new JobThread(jobId, handler);
         newJobThread.start();
         logger.info(">>>>>>>>>>> xxl-job regist JobThread success, jobId:{}, handler:{}", new Object[]{jobId, handler});
 
         JobThread oldJobThread = jobThreadRepository.put(jobId, newJobThread);    // putIfAbsent | oh my god, map's put method return the old value!!!
         if (oldJobThread != null) {
+            // 如果当前job之前已经有处理的线程
             oldJobThread.toStop(removeOldReason);
+            // 中断线程，只是设置了线程的中断状态
             oldJobThread.interrupt();
         }
 

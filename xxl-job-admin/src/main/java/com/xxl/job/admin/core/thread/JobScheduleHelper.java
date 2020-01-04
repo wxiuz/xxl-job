@@ -66,9 +66,7 @@ public class JobScheduleHelper {
                     connAutoCommit = conn.getAutoCommit();
                     conn.setAutoCommit(false);
 
-                    // 保证调度中心集群中同一时刻只有一个调度器来进行调度，
-
-                    // 获取锁
+                    // 获取锁，保证调度中心集群中同一时刻只有一个调度器来进行调度，
                     preparedStatement = conn.prepareStatement("select * from xxl_job_lock where lock_name = 'schedule_lock' for update");
                     preparedStatement.execute();
 
