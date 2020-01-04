@@ -1,76 +1,42 @@
 package com.xxl.job.admin.core.model;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import com.google.common.collect.Lists;
+import lombok.Data;
+import org.springframework.util.StringUtils;
+
 import java.util.List;
 
 /**
+ * 执行器model
  * Created by xuxueli on 16/9/30.
  */
+@Data
 public class XxlJobGroup {
-
+    // 执行器ID
     private int id;
-    private String appName;
-    private String title;
-    private int order;
-    private int addressType;        // 执行器地址类型：0=自动注册、1=手动录入
-    private String addressList;     // 执行器地址列表，多地址逗号分隔(手动录入)
 
-    // registry list
-    private List<String> registryList;  // 执行器地址列表(系统注册)
+    // 执行器所属应用名称
+    private String appName;
+
+    // 执行器名称
+    private String title;
+
+    // 顺序
+    private int order;
+
+    // 执行器地址类型：0=自动注册、1=手动录入
+    private int addressType;
+
+    // 执行器地址列表，多地址逗号分隔
+    private String addressList;
+
+    // 执行器地址列表(系统注册)
+    private List<String> registryList;
+
     public List<String> getRegistryList() {
-        if (addressList!=null && addressList.trim().length()>0) {
-            registryList = new ArrayList<String>(Arrays.asList(addressList.split(",")));
+        if (StringUtils.hasText(addressList)) {
+            registryList = Lists.newArrayList(StringUtils.commaDelimitedListToSet(addressList));
         }
         return registryList;
     }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getAppName() {
-        return appName;
-    }
-
-    public void setAppName(String appName) {
-        this.appName = appName;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public int getOrder() {
-        return order;
-    }
-
-    public void setOrder(int order) {
-        this.order = order;
-    }
-
-    public int getAddressType() {
-        return addressType;
-    }
-
-    public void setAddressType(int addressType) {
-        this.addressType = addressType;
-    }
-
-    public String getAddressList() {
-        return addressList;
-    }
-
-    public void setAddressList(String addressList) {
-        this.addressList = addressList;
-    }
-
 }

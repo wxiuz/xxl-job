@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
+ * 各种线程初始化
+ *
  * @author xuxueli 2018-10-28 00:18:17
  */
 
@@ -24,7 +26,7 @@ public class XxlJobScheduler {
     private static final Logger logger = LoggerFactory.getLogger(XxlJobScheduler.class);
 
 
-    public void init() throws Exception {
+    public void init() {
         // init i18n
         initI18n();
 
@@ -34,20 +36,20 @@ public class XxlJobScheduler {
         // admin monitor run
         JobFailMonitorHelper.getInstance().start();
 
-        // admin trigger pool start
+        // 调度线程池初始化：任务的调度最终通过该组件来完成
         JobTriggerPoolHelper.toStart();
 
         // admin log report start
         JobLogReportHelper.getInstance().start();
 
-        // start-schedule
+        // 核心调度开始，最终由该组件来发起job的调度，即所有job由该组件触发
         JobScheduleHelper.getInstance().start();
 
         logger.info(">>>>>>>>> init xxl-job admin success.");
     }
 
 
-    public void destroy() throws Exception {
+    public void destroy() {
 
         // stop-schedule
         JobScheduleHelper.getInstance().toStop();
@@ -74,7 +76,7 @@ public class XxlJobScheduler {
     }
 
     // ---------------------- executor-client ----------------------
-    private static ConcurrentMap<String, ExecutorBiz> executorBizRepository = new ConcurrentHashMap<String, ExecutorBiz>();
+    private static ConcurrentMap<String, ExecutorBiz> executorBizRepository = new ConcurrentHashMap<>();
 
     public static ExecutorBiz getExecutorBiz(String address) throws Exception {
         // valid

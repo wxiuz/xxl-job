@@ -1,17 +1,22 @@
 package com.xxl.job.admin.core.thread;
 
+import com.google.common.collect.TreeMultimap;
 import com.xxl.job.admin.core.conf.XxlJobAdminConfig;
 import com.xxl.job.admin.core.model.XxlJobGroup;
 import com.xxl.job.admin.core.model.XxlJobRegistry;
 import com.xxl.job.core.enums.RegistryConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * job registry instance
+ * 将执行器注册信息同步至xxl_job_group表中
  *
  * @author xuxueli 2016-10-02 19:10:24
  */
@@ -28,78 +33,56 @@ public class JobRegistryMonitorHelper {
     private volatile boolean toStop = false;
 
     public void start() {
-        registryThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (!toStop) {
-                    try {
-                        // 查询注册方式为自动注册的执行器：address type -->  0-自动注册，1-手动录入
-                        List<XxlJobGroup> groupList = XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().findByAddressType(0);
-                        if (groupList != null && !groupList.isEmpty()) {
-
-                            // 删除90s没有心跳的执行器
-                            List<Integer> ids = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findDead(RegistryConfig.DEAD_TIMEOUT, new Date());
-                            if (ids != null && ids.size() > 0) {
-                                XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().removeDead(ids);
-                            }
-
-                            // fresh online address (admin/executor)
-                            HashMap<String, List<String>> appAddressMap = new HashMap<String, List<String>>();
-                            // 查询所有存活的执行器
-                            List<XxlJobRegistry> list = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findAll(RegistryConfig.DEAD_TIMEOUT, new Date());
-                            if (list != null) {
-                                for (XxlJobRegistry item : list) {
-                                    if (RegistryConfig.RegistType.EXECUTOR.name().equals(item.getRegistryGroup())) {
-                                        // 执行器名称
-                                        String appName = item.getRegistryKey();
-                                        // 执行器地址
-                                        List<String> registryList = appAddressMap.get(appName);
-                                        if (registryList == null) {
-                                            registryList = new ArrayList<String>();
-                                        }
-                                        if (!registryList.contains(item.getRegistryValue())) {
-                                            registryList.add(item.getRegistryValue());
-                                        }
-                                        // 每个执行器对应的地址信息
-                                        appAddressMap.put(appName, registryList);
-                                    }
-                                }
-                            }
-
-                            // 将自动注册的执行器地址信息更新到xxl_job_group中
-                            for (XxlJobGroup group : groupList) {
-                                // 获取当前执行器对应的地址信息
-                                List<String> registryList = appAddressMap.get(group.getAppName());
-                                String addressListStr = null;
-                                // 如果存在地址信息，则将地址信息更新到xxl_job_group中
-                                if (registryList != null && !registryList.isEmpty()) {
-                                    Collections.sort(registryList);
-                                    addressListStr = "";
-                                    for (String item : registryList) {
-                                        addressListStr += item + ",";
-                                    }
-                                    addressListStr = addressListStr.substring(0, addressListStr.length() - 1);
-                                }
-                                group.setAddressList(addressListStr);
-                                XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().update(group);
-                            }
+        registryThread = new Thread(() -> {
+            while (!toStop) {
+                try {
+                    // 查询注册方式为自动注册的执行器：address type -->  0-自动注册，1-手动录入
+                    List<XxlJobGroup> groupList = XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().findByAddressType(0);
+                    if (!CollectionUtils.isEmpty(groupList)) {
+                        // 删除90s没有心跳的执行器
+                        List<Integer> ids = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findDead(RegistryConfig.DEAD_TIMEOUT, new Date());
+                        if (ids != null && ids.size() > 0) {
+                            XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().removeDead(ids);
                         }
-                    } catch (Exception e) {
-                        if (!toStop) {
-                            logger.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e);
+
+                        final TreeMultimap<String, String> appAddressMap = TreeMultimap.create();
+                        // 查询所有存活的执行器
+                        List<XxlJobRegistry> list = XxlJobAdminConfig.getAdminConfig().getXxlJobRegistryDao().findAll(RegistryConfig.DEAD_TIMEOUT, new Date());
+                        if (!CollectionUtils.isEmpty(list)) {
+                            list.stream().filter(x -> RegistryConfig.RegistType.EXECUTOR.name().equals(x.getRegistryGroup()))
+                                    .forEach(x -> appAddressMap.put(x.getRegistryKey(), x.getRegistryValue()));
+                        }
+
+                        // 将自动注册的执行器地址信息更新到xxl_job_group中
+                        for (XxlJobGroup group : groupList) {
+                            // 获取当前执行器对应的地址信息
+                            Set<String> registryList = appAddressMap.get(group.getAppName());
+                            String addressListStr = null;
+                            // 如果存在地址信息，则将地址信息更新到xxl_job_group中
+                            if (!CollectionUtils.isEmpty(registryList)) {
+                                addressListStr = StringUtils.collectionToCommaDelimitedString(registryList);
+                            }
+                            group.setAddressList(addressListStr);
+                            XxlJobAdminConfig.getAdminConfig().getXxlJobGroupDao().update(group);
                         }
                     }
-                    try {
-                        TimeUnit.SECONDS.sleep(RegistryConfig.BEAT_TIMEOUT);
-                    } catch (InterruptedException e) {
-                        if (!toStop) {
-                            logger.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e);
-                        }
+                } catch (Exception e) {
+                    if (!toStop) {
+                        logger.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e);
                     }
                 }
-                logger.info(">>>>>>>>>>> xxl-job, job registry monitor thread stop");
+                try {
+                    TimeUnit.SECONDS.sleep(RegistryConfig.BEAT_TIMEOUT);
+                } catch (InterruptedException e) {
+                    if (!toStop) {
+                        logger.error(">>>>>>>>>>> xxl-job, job registry monitor thread error:{}", e);
+                    }
+                }
             }
+            logger.info(">>>>>>>>>>> xxl-job, job registry monitor thread stop");
         });
+
+
         registryThread.setDaemon(true);
         registryThread.setName("xxl-job, admin JobRegistryMonitorHelper");
         registryThread.start();
