@@ -38,7 +38,7 @@ public class JobScheduleHelper {
     }
 
     public void start() {
-        // 调度触发线程
+        // 调度触发线程，与Quartz不同，Quartz调度线程需要等待线程池有可以处理任务的线程后才能查询出数据进行触发，如果没有可用线程则一直阻塞
         scheduleThread = new Thread(() -> {
             try {
                 // 最长延迟1s在查询
@@ -67,7 +67,7 @@ public class JobScheduleHelper {
                     connAutoCommit = conn.getAutoCommit();
                     conn.setAutoCommit(false);
 
-                    // 获取锁，保证调度中心集群中同一时刻只有一个调度器来进行调度，
+                    // 获取锁，保证调度中心集群中同一时刻只有一个调度器来进行调度，与Quartz集群模式保证一致性的方式一致，都是通过数据库行锁来解决
                     preparedStatement = conn.prepareStatement("select * from xxl_job_lock where lock_name = 'schedule_lock' for update");
                     preparedStatement.execute();
 
