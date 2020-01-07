@@ -109,7 +109,7 @@ public class XxlJobTrigger {
         // 分片参数
         String shardingParam = (ExecutorRouteStrategyEnum.SHARDING_BROADCAST == executorRouteStrategyEnum) ? String.valueOf(index).concat("/").concat(String.valueOf(total)) : null;
 
-        // 1、save log-id
+        // 1、保存本地调用日志
         XxlJobLog jobLog = new XxlJobLog();
         // 执行器ID
         jobLog.setJobGroup(jobInfo.getJobGroup());
@@ -120,19 +120,27 @@ public class XxlJobTrigger {
         XxlJobAdminConfig.getAdminConfig().getXxlJobLogDao().save(jobLog);
         logger.debug(">>>>>>>>>>> xxl-job trigger start, jobId:{}", jobLog.getId());
 
-        // 2、init trigger-param
+        // 2、创建调度请求参数
         TriggerParam triggerParam = new TriggerParam();
+        // JobId
         triggerParam.setJobId(jobInfo.getId());
+        // Job处理器，在Bean模式下就是对应的执行器中的业务对象
         triggerParam.setExecutorHandler(jobInfo.getExecutorHandler());
+        // 执行参数
         triggerParam.setExecutorParams(jobInfo.getExecutorParam());
+        // 调度阻塞策略
         triggerParam.setExecutorBlockStrategy(jobInfo.getExecutorBlockStrategy());
         triggerParam.setExecutorTimeout(jobInfo.getExecutorTimeout());
         triggerParam.setLogId(jobLog.getId());
         triggerParam.setLogDateTime(jobLog.getTriggerTime().getTime());
+        // Job类型
         triggerParam.setGlueType(jobInfo.getGlueType());
+        // 如果Job类型不是Bean时，此处为Groovy代码
         triggerParam.setGlueSource(jobInfo.getGlueSource());
         triggerParam.setGlueUpdatetime(jobInfo.getGlueUpdatetime().getTime());
+        // 分片请求：当前分片序号
         triggerParam.setBroadcastIndex(index);
+        // 分片请求：分片总数
         triggerParam.setBroadcastTotal(total);
 
         // 3、init address

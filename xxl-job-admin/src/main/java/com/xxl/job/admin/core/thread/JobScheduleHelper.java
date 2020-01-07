@@ -41,6 +41,7 @@ public class JobScheduleHelper {
         // 调度触发线程
         scheduleThread = new Thread(() -> {
             try {
+                // 最长延迟1s在查询
                 TimeUnit.MILLISECONDS.sleep(5000 - System.currentTimeMillis() % 1000);
             } catch (InterruptedException e) {
                 if (!scheduleThreadToStop) {

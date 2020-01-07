@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 
 
 /**
- * handler thread
+ * 处理Job任务的线程，每个Job都有一个对应的线程来进行专门的Job逻辑执行
  *
  * @author xuxueli 2016-1-16 19:52:47
  */
@@ -106,7 +106,7 @@ public class JobThread extends Thread {
             logger.error(e.getMessage(), e);
         }
 
-        // execute
+        // 如果当前线程没有停止，则一直取任务处理
         while (!toStop) {
             running = false;
             idleTimes++;
@@ -114,7 +114,7 @@ public class JobThread extends Thread {
             TriggerParam triggerParam = null;
             ReturnT<String> executeResult = null;
             try {
-                // to check toStop signal, we need cycle, so wo cannot use queue.take(), instand of poll(timeout)
+                // 为了定期检查当前线程是否已经停止，所以不能使用take，而是使用poll来取数据
                 triggerParam = triggerQueue.poll(3L, TimeUnit.SECONDS);
                 if (triggerParam != null) {
                     running = true;
@@ -130,6 +130,9 @@ public class JobThread extends Thread {
                     // execute
                     XxlJobLogger.log("<br>----------- xxl-job job execute start -----------<br>----------- Param:" + triggerParam.getExecutorParams());
 
+                    /**
+                     * 如果配置了执行超时时间，则需要检查超时时间
+                     */
                     if (triggerParam.getExecutorTimeout() > 0) {
                         // limit timeout
                         Thread futureThread = null;
@@ -155,7 +158,7 @@ public class JobThread extends Thread {
                             futureThread.interrupt();
                         }
                     } else {
-                        // just execute
+                        // 没有配置执行超时时间，则直接执行
                         executeResult = handler.execute(triggerParam.getExecutorParams());
                     }
 
@@ -189,6 +192,7 @@ public class JobThread extends Thread {
 
                 XxlJobLogger.log("<br>----------- JobThread Exception:" + errorMsg + "<br>----------- xxl-job job execute end(error) -----------");
             } finally {
+                // 如果取到了请求参数，则将结果推送给调度中心
                 if (triggerParam != null) {
                     // callback handler info
                     if (!toStop) {

@@ -145,7 +145,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
             return new ReturnT<String>(ReturnT.FAIL_CODE, "glueType[" + triggerParam.getGlueType() + "] is not valid.");
         }
 
-        // 如果不需要终端原来的任务，则直接调用执行
+        // 如果不需要中断原来的任务，则直接调用执行
         if (jobThread != null) {
             // 执行器阻塞策略
             ExecutorBlockStrategyEnum blockStrategy = ExecutorBlockStrategyEnum.match(triggerParam.getExecutorBlockStrategy(), null);
@@ -172,7 +172,7 @@ public class ExecutorBizImpl implements ExecutorBiz {
             jobThread = XxlJobExecutor.registJobThread(triggerParam.getJobId(), jobHandler, removeOldReason);
         }
 
-        // push data to queue
+        // 将请求放到对应Job的执行线程的队列中，等待线程来取任务执行
         ReturnT<String> pushResult = jobThread.pushTriggerQueue(triggerParam);
         return pushResult;
     }
